@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Attempt Reset | Admin Panel</title>
+  <link rel="icon" type="image/x-icon" href="fav_icon2.ico">
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f3f3;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #006400;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      color: #006400;
+      text-align: center;
+    }
+    select, button {
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #006400;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .btn {
+      background-color: #006400;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 10px 15px;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background-color: #004d00;
+    }
+    .danger {
+      background-color: #b22222;
+    }
+    .danger:hover {
+      background-color: #8b0000;
+    }
+  </style>
+</head>
+<body>
+  <header>ADMIN PANEL — RESET STUDENT EXAM ATTEMPTS</header>
+
+  <div class="container">
+    <h2>View & Reset Exam Attempts</h2>
+    <label for="classSelect">Select Class:</label>
+    <select id="classSelect">
+      <option value="">-- Select Class --</option>
+      <option value="jss1">JSS1</option>
+      <option value="jss2">JSS2</option>
+      <option value="jss3">JSS3</option>
+      <option value="ss1">SS1</option>
+      <option value="ss2">SS2</option>
+      <option value="ss3">SS3</option>
+    </select>
+    <button class="btn" onclick="loadAttempts()">Load Attempts</button>
+
+    <div id="attemptsContainer"></div>
+  </div>
+
+  <script>
+  function getExamAttempts(cls) {
+    const key = `${cls}_exam_attempt`;
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : { [key]: [] };
+  }
+
+  function saveExamAttempts(cls, data) {
+    const key = `${cls}_exam_attempt`;
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  function loadAttempts() {
+    const cls = document.getElementById("classSelect").value;
+    const container = document.getElementById("attemptsContainer");
+    container.innerHTML = "";
+
+    if (!cls) {
+      alert("Please select a class to view attempts.");
+      return;
+    }
+
+    const data = getExamAttempts(cls);
+    const key = `${cls}_exam_attempt`;
+    const list = data[key] || [];
+
+    if (list.length === 0) {
+      container.innerHTML = `<p>No exam attempts found for ${cls.toUpperCase()}.</p>`;
+      return;
+    }
+
+    // Create table
+    let tableHTML = `
+      <table>
+        <tr>
+          <th>ID</th>
+          <th>Student Name</th>
+          <th>Subjects Completed</th>
+          <th>Action</th>
+        </tr>
+    `;
+
+    list.forEach((student, index) => {
+      const subjects = Object.keys(student)
+        .filter(k => k !== "id" && k !== "username")
+        .map(k => `${k.replace(/_/g, " ")} ✔️`)
+        .join(", ");
+      tableHTML += `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.username}</td>
+          <td>${subjects || "-"}</td>
+          <td><button class="btn danger" onclick="resetStudent('${cls}', '${student.username}')">Reset</button></td>
+        </tr>
+      `;
+    });
+
+    tableHTML += `</table>
+      <center><br><button class="btn danger" onclick="clearAll('${cls}')">Clear All Attempts for ${cls.toUpperCase()}</button></center>
+    `;
+
+    container.innerHTML = tableHTML;
+  }
+
+  function resetStudent(cls, username) {
+    if (!confirm(`Are you sure you want to reset attempts for ${username}?`)) return;
+
+    const data = getExamAttempts(cls);
+    const key = `${cls}_exam_attempt`;
+    let list = data[key] || [];
+
+    list = list.filter(s => s.username !== username);
+    data[key] = list;
+
+    saveExamAttempts(cls, data);
+    alert(`✅ Exam attempts for ${username} have been cleared.`);
+    loadAttempts();
+  }
+
+  function clearAll(cls) {
+    if (!confirm(`⚠️ This will delete ALL attempts for ${cls.toUpperCase()}. Continue?`)) return;
+
+    localStorage.removeItem(`${cls}_exam_attempt`);
+    alert(`✅ All exam attempts for ${cls.toUpperCase()} cleared.`);
+    loadAttempts();
+  }
+  </script>
+</body>
+</html>
